@@ -1,0 +1,139 @@
+<?php if (isset($_SESSION['user_id'])): ?>
+
+    <?php
+    // Fetch user info
+    $stmt = mysqli_prepare(
+        $db_connect,
+        "SELECT created_at, profile_picture, id, username FROM users WHERE id = ?"
+    );
+    mysqli_stmt_bind_param($stmt, "i", $_SESSION['user_id']);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $user = mysqli_fetch_assoc($result);
+
+    // Count uploaded images
+    $stmt = mysqli_prepare(
+        $db_connect,
+        "SELECT COUNT(*) AS post_count FROM images WHERE uploader_id = ?"
+    );
+    mysqli_stmt_bind_param($stmt, "i", $_SESSION['user_id']);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $countRow = mysqli_fetch_assoc($result);
+
+    $postCount = $countRow['post_count'];
+    ?>
+
+    <h1>LOGGED IN: <?= htmlspecialchars($_SESSION['username']) ?></h1>
+
+
+
+
+
+
+
+
+
+
+
+
+
+Pagination (LIMIT + OFFSET)
+Step 1: Decide page size
+$imagesPerPage = 6;
+
+Step 2: Get current page from URL
+$page = isset($_GET['page']) && is_numeric($_GET['page'])
+    ? (int)$_GET['page']
+    : 1;
+
+if ($page < 1) $page = 1;
+
+Step 3: Calculate OFFSET
+$offset = ($page - 1) * $imagesPerPage;
+
+Step 4: Modify your image query
+
+Replace:
+
+$query = "SELECT * FROM images";
+
+
+With:
+
+$query = "SELECT * FROM images
+          ORDER BY created_at DESC
+          LIMIT $imagesPerPage OFFSET $offset";
+
+
+⚠ LIMIT and OFFSET cannot be bound parameters in MySQLi, so this is OK as long as $page is validated (which we did).
+
+3️⃣ Total pages (for page links)
+
+You need to know how many images exist total:
+
+$countQuery = "SELECT COUNT(*) AS total FROM images";
+$countResult = mysqli_query($db_connect, $countQuery);
+$totalRow = mysqli_fetch_assoc($countResult);
+
+$totalImages = $totalRow['total'];
+$totalPages = ceil($totalImages / $imagesPerPage);
+
+4️⃣ Pagination links (simple)
+
+Put this below your image list:
+
+<div style="margin-top:20px;">
+    <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+        <?php if ($i == $page): ?>
+            <strong><?= $i ?></strong>
+        <?php else: ?>
+            <a href="?page=<?= $i ?>"><?= $i ?></a>
+        <?php endif; ?>
+    <?php endfor; ?>
+</div>
+
+
+This will generate:
+
+1 2 3 4 5
+
+
+With the current page highlighted.
+
+🧠 Bonus: Show username instead of uploader_id
+
+Since you already noticed this TODO, here’s the correct SQL solution:
+
+SELECT images.*, users.username
+FROM images
+LEFT JOIN users ON images.uploader_id = users.id
+ORDER BY images.created_at DESC
+LIMIT ? OFFSET ?
+
+
+Then display:
+
+<span>
+Posted by:
+<?= htmlspecialchars($data['username'] ?? 'Anonymous') ?>
+</span>
+
+Summary
+
+✔ Count posts → COUNT(*) WHERE uploader_id = ?
+✔ Pagination → LIMIT + OFFSET
+✔ Total pages → COUNT(*) / perPage
+✔ Username instead of ID → JOIN users
+
+If you want, I can:
+
+Refactor this into reusable functions
+
+Add user-specific galleries
+
+Add pagination + filters (latest / most popular)
+
+Help you enforce foreign keys for uploader_id
+
+Just say the word 👌

@@ -1,0 +1,30 @@
+CREATE DATABASE iska_webgallerydb;
+USE iska_webgallerydb;
+
+CREATE TABLE users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    email VARCHAR(255) NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    profile_picture VARCHAR(255) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE images (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    image_file VARCHAR(255) NOT NULL,
+    description VARCHAR(255) NULL,
+    uploader_id INT NULL, -- Changed name to uploader_id and type to INT to match users.id
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    -- This line creates the relationship
+    CONSTRAINT fk_uploader 
+    FOREIGN KEY (uploader_id) 
+    REFERENCES users(id) 
+    ON DELETE SET NULL -- If a user is deleted, keep the image but set uploader to NULL
+);
+
+
+https://www.petanikode.com/php-login-register/
